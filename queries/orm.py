@@ -1,10 +1,5 @@
 from sqlalchemy import Integer, and_, insert, select, func, cast
-import sqlalchemy
-import sqlalchemy.dialects
-import sqlalchemy.dialects.mysql
-import sqlalchemy.dialects.postgresql
-import sqlalchemy.dialects.sqlite
-from sqlalchemy.orm import aliased
+from sqlalchemy.orm import aliased, joinedload, selectinload
 from database import Base
 from database import session_factory, sync_engine, async_engine, async_session_factory
 from models import ResumeOrm, WorkerOrm, Workload
@@ -149,7 +144,44 @@ class SyncOrm:
         with session_factory() as session:
             result = session.execute(query)
             result = result.all()
-        print(*result, sep = "\n")
+        print(*result, sep="\n")
+
+    @staticmethod
+    def select_workers_with_lazy_relationship():  # lazyload - not good for all relations
+        query = select(WorkerOrm)
+        with session_factory() as session:
+            res = session.execute(query)
+            result = res.scalars().all()  # UNIQUE
+            resume1 = result[0].resumes
+            print(resume1)
+            resume2 = result[1].resumes
+            print(resume2)
+
+    @staticmethod
+    def select_workers_with_lazy_joined_relationship():  ## joinedload - good for -many to one- and -one to one- relations
+        query = select(WorkerOrm).options(
+            joinedload(WorkerOrm.resumes)
+        )  ## too match same data in traffic
+        with session_factory() as session:
+            res = session.execute(query)
+            result = res.unique().scalars().all()
+            resume1 = result[0].resumes
+            print(resume1)
+            resume2 = result[1].resumes
+            print(resume2)
+
+    @staticmethod
+    def select_workers_with_lazy_selectinload_relationship():  ## selectinload - good for -one to many- and -many to many- relations.
+        query = select(WorkerOrm).options(
+            selectinload(WorkerOrm.resumes)
+        )  ## it's like prefetch_related, make 2 requests first to mother entities and seconde filtered by first ids
+        with session_factory() as session:  ## careful to data traffic between db and app
+            res = session.execute(query)
+            result = res.unique().scalars().all()
+            resume1 = result[0].resumes
+            print(resume1)
+            resume2 = result[1].resumes
+            print(resume2)
 
 
 class AsyncOrm:

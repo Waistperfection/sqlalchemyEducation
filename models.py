@@ -1,6 +1,5 @@
 from datetime import datetime, UTC
 import enum
-from pydoc import plain
 from typing import Annotated
 
 from sqlalchemy import (
@@ -15,7 +14,7 @@ from sqlalchemy import (
     Enum,
 )
 from database import Base
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 metadata_obj = MetaData()
 
@@ -29,6 +28,8 @@ class Workload(enum.Enum):
 # DECLARATIVE POWER!!!!
 # can generate reusable column
 
+
+## custom fields aliases
 pk_int_field = Annotated[int, mapped_column(primary_key=True)]
 created_at_field = Annotated[
     datetime, mapped_column(server_default=text("TIMEZONE('utc', now())"))
@@ -42,6 +43,7 @@ updated_at_field = Annotated[
 ]
 
 
+## Declarative tables
 class WorkerOrm(Base):
     __tablename__ = "workers"
 
@@ -49,8 +51,11 @@ class WorkerOrm(Base):
     id: Mapped[pk_int_field]
     username: Mapped[str] = mapped_column(String(255))
 
-    def __repr__(self):
-        return f"{self.id=}, {self.username=}"
+    ##relations
+    resumes: Mapped[list["ResumeOrm"]] = relationship()
+
+    # def __repr__(self):
+    #     return f"{self.id=}, {self.username=}"
 
 
 class ResumeOrm(Base):
@@ -72,8 +77,11 @@ class ResumeOrm(Base):
     created_at: Mapped[created_at_field]
     updated_at: Mapped[updated_at_field]
 
-    def __repr__(self):
-        return f"{self.id=}, {self.title=}, {self.compensation=}"
+    ## relations
+    worker: Mapped["WorkerOrm"] = relationship()
+
+    # def __repr__(self):
+    #     return f"{self.id=}, {self.title=}, {self.compensation=}"
 
 
 ########################################3
