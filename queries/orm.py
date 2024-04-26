@@ -1,8 +1,14 @@
 from sqlalchemy import Integer, and_, insert, select, func, cast
+import sqlalchemy
+import sqlalchemy.dialects
+import sqlalchemy.dialects.mysql
+import sqlalchemy.dialects.postgresql
+import sqlalchemy.dialects.sqlite
+from sqlalchemy.orm import aliased
 from database import Base
 from database import session_factory, sync_engine, async_engine, async_session_factory
 from models import ResumeOrm, WorkerOrm, Workload
-from test_data import resumes, additional_resumes, additional_workers
+from .test_data import resumes, additional_resumes, additional_workers
 
 
 class SyncOrm:
@@ -89,8 +95,61 @@ class SyncOrm:
 
     @staticmethod
     def insert_additional_workers_with_resumes():
-        insert(WorkerOrm).values(additional_workers)
-        insert(ResumeOrm).values(additional_resumes)
+        with session_factory() as session:
+            insert_workers = insert(WorkerOrm).values(additional_workers)
+            insert_resumes = insert(ResumeOrm).values(additional_resumes)
+            session.execute(insert_workers)
+            session.execute(insert_resumes)
+            session.commit()
+        print("addition insertion ended")
+
+    @staticmethod
+    def join_cte_subquery_window_func(like_language="python"):
+        """
+        WITH helper2 as (
+        SELECT *, compensation - avg_workload_compensation as avg_diff from (SELECT
+            w.id,
+            w.username,
+            r.compensation,
+            r.workload,
+            avg(r.compensation) OVER (PARTITION BY workload)::int AS avg_workload_compensation
+        FROM resumes as r
+        INNER JOIN workers as w on r.worker_id = w.id) as helper1)
+        SELECT * FROM helper2
+        ORDER BY avg_diff DESC
+        """
+        r = aliased(ResumeOrm)
+        w = aliased(WorkerOrm)
+        subq = (
+            select(
+                r,
+                w,
+                func.avg(r.compensation)
+                .over(partition_by=r.workload)
+                .cast(Integer)
+                .label("avg_workload_compensation"),
+            )
+            # .select_from(r) # not working here!!!
+            .join(
+                r, r.worker_id == w.id
+            ).subquery(  # on_default - INNER JOIN, full=True - FULL JOIN, isouter = True - LEFT JOIN, RIGHT JOIN - not implemented
+                "helper1"
+            )
+        )
+        cte = select(
+            subq.c.worker_id,
+            subq.c.username,
+            subq.c.compensation,
+            subq.c.workload,
+            subq.c.avg_workload_compensation,
+            (subq.c.compensation - subq.c.avg_workload_compensation).label("avg_diff"),
+        ).cte("helper2")
+        query = select(cte).order_by(cte.c.avg_diff.desc())
+        # print(query.compile(dialect=sqlalchemy.dialects.mysql.dialect()))
+        with session_factory() as session:
+            result = session.execute(query)
+            result = result.all()
+        print(*result, sep = "\n")
 
 
 class AsyncOrm:

@@ -3,7 +3,7 @@ from sqlalchemy import Integer, and_, func, text, insert, select, update
 
 from database import sync_engine, async_engine
 from models import workers_table, resumes_table, metadata_obj
-from test_data import resumes
+from .test_data import resumes
 
 
 class SyncCore:
