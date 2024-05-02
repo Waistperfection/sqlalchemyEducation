@@ -52,10 +52,19 @@ class WorkerOrm(Base):
     username: Mapped[str] = mapped_column(String(255))
 
     ##relations
-    resumes: Mapped[list["ResumeOrm"]] = relationship()
+    resumes: Mapped[list["ResumeOrm"]] = relationship(
+        back_populates="worker",
+        # backref="worker", ## almost same as back_populates but ref in other table create automatically almost deprecated style by dzen of python
+        # primarjoin = "workers.id == resumes.worker_id"
+    )
 
-    # def __repr__(self):
-    #     return f"{self.id=}, {self.username=}"
+    resumes_parttime: Mapped[list["ResumeOrm"]] = relationship(
+        back_populates="worker",
+        # backref="worker", ## almost same as back_populates but ref in other table create automatically almost deprecated style by dzen of python
+        primaryjoin="and_(workers.c.id == resumes.c.worker_id, resumes.c.workload == 'parttime')",  ## to set SQL ON expression, can use sqlalchemy functions and expressions or SQL expressions with text() without import this funcs to
+        ## in prymaryjoin can use also ResumeOrm.id style and its will be also good practice
+        # lazy = "selectin" ## to set policy with of loading this relation automatically!!! selectin - not good practice
+    )
 
 
 class ResumeOrm(Base):
@@ -78,7 +87,9 @@ class ResumeOrm(Base):
     updated_at: Mapped[updated_at_field]
 
     ## relations
-    worker: Mapped["WorkerOrm"] = relationship()
+    worker: Mapped["WorkerOrm"] = relationship(
+        back_populates="resumes",
+    )
 
     # def __repr__(self):
     #     return f"{self.id=}, {self.title=}, {self.compensation=}"

@@ -158,7 +158,7 @@ class SyncOrm:
             print(resume2)
 
     @staticmethod
-    def select_workers_with_lazy_joined_relationship():  ## joinedload - good for -many to one- and -one to one- relations
+    def select_workers_with_lazy_joined_relationship():  ## joinedload - good for /many to one/ and /one to one/ relations
         query = select(WorkerOrm).options(
             joinedload(WorkerOrm.resumes)
         )  ## too match same data in traffic
@@ -171,7 +171,7 @@ class SyncOrm:
             print(resume2)
 
     @staticmethod
-    def select_workers_with_lazy_selectinload_relationship():  ## selectinload - good for -one to many- and -many to many- relations.
+    def select_workers_with_lazy_selectinload_relationship():  ## selectinload - good for /one to many/ and /many to many/ relations.
         query = select(WorkerOrm).options(
             selectinload(WorkerOrm.resumes)
         )  ## it's like prefetch_related, make 2 requests first to mother entities and seconde filtered by first ids
@@ -183,6 +183,17 @@ class SyncOrm:
             resume2 = result[1].resumes
             print(resume2)
 
+    @staticmethod
+    def select_workers_with_condition_relationship():
+        query = select(WorkerOrm).options(selectinload(WorkerOrm.resumes_parttime))
+        with session_factory() as session:
+            res = session.execute(query)
+            result = res.scalars().all()
+        for worker in result:
+            print(worker)
+            for resume in worker.resumes_parttime:
+                print("\t", resume)
+                
 
 class AsyncOrm:
 
