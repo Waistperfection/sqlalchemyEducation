@@ -1,8 +1,8 @@
 from sqlalchemy import Integer, and_, insert, select, func, cast
-from sqlalchemy.orm import aliased, joinedload, selectinload
+from sqlalchemy.orm import aliased, joinedload, selectinload, contains_eager
 from database import Base
 from database import session_factory, sync_engine, async_engine, async_session_factory
-from models import ResumeOrm, WorkerOrm, Workload
+from models import ResumeOrm, VacancyOrm, WorkerOrm, Workload
 from .test_data import resumes, additional_resumes, additional_workers
 
 
@@ -193,7 +193,78 @@ class SyncOrm:
             print(worker)
             for resume in worker.resumes_parttime:
                 print("\t", resume)
-                
+
+    @staticmethod
+    def select_workers_with_contains_eager():  # previous relations returns all users, and some users with resumes, but this relations will return only users, with parttime resume
+        query = (
+            select(WorkerOrm)
+            # .join(WorkerOrm.resumes)
+            .join(ResumeOrm, WorkerOrm.id == ResumeOrm.worker_id)
+            .filter(ResumeOrm.workload == Workload.parttime)
+            .options(
+                contains_eager(WorkerOrm.resumes)
+            )  # contains eager convert table to included objects, using already existing joins!
+        )
+        with session_factory() as session:
+            res = session.execute(query)
+            result = res.unique().scalars().all()
+        for worker in result:
+            print(worker)
+            for resume in worker.resumes:
+                print("\t", resume)
+
+    @staticmethod
+    def select_workers_and_resumes_with_limit():
+        subq = (
+            select(ResumeOrm.id.label("parttime_resume_id"))
+            .filter(ResumeOrm.worker_id == WorkerOrm.id)
+            .order_by(WorkerOrm.id.desc(), ResumeOrm.compensation.desc())
+            .limit(3)
+            .scalar_subquery()  # because it's only one item in request not [(id), (id)] but [id, id]
+            .correlate(WorkerOrm)
+        )
+
+        query = (
+            select(WorkerOrm)
+            .join(ResumeOrm, ResumeOrm.id.in_(subq))
+            .options(contains_eager(WorkerOrm.resumes))
+        )
+
+        with session_factory() as session:
+            res = session.execute(query)
+            result = res.unique().scalars().all()
+
+        for worker in result:
+            print(worker)
+            for resume in worker.resumes:
+                print("\t", resume)
+
+    @staticmethod
+    def add_vacancies_and_replies():
+        with session_factory() as session:
+            new_vacancy = VacancyOrm(
+                title="junior Python Developer", compensation=100000
+            )
+            resume_1 = session.get(ResumeOrm, 1)
+            resume_2 = session.get(ResumeOrm, 2)
+            resume_1.vacancies_replied.append(new_vacancy)
+            resume_2.vacancies_replied.append(new_vacancy)
+            session.commit()
+
+    @staticmethod
+    def select_resume_with_all_relationship():
+        query = (
+            select(ResumeOrm)
+            .options(joinedload(ResumeOrm.worker))
+            .options(selectinload(ResumeOrm.vacancies_replied))
+            # .options(selectinload(ResumeOrm.vacancies_replied).load_only(<fields_names>))
+        )
+        with session_factory() as session:
+            res = session.execute(query)
+            result_orm = res.unique().scalars().all()
+        print(result_orm)
+
+
 
 class AsyncOrm:
 

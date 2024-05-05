@@ -6,7 +6,7 @@ import os
 
 # sys.path.insert(1, os.path.join(sys.path[0], ".."))
 
-from queries.core import SyncCore, AsyncCore
+# from queries.core import SyncCore, AsyncCore
 from queries.orm import SyncOrm, AsyncOrm
 
 # SyncCore.create_tables()
@@ -17,15 +17,21 @@ from queries.orm import SyncOrm, AsyncOrm
 SyncOrm.create_tables()
 SyncOrm.toggle_echo()
 SyncOrm.insert_data()
-SyncOrm.update_worker()
-SyncOrm.insert_resumes()
-SyncOrm.select_workers()
-# SyncOrm.select_avg_compensation_for_workload()
-SyncOrm.insert_additional_workers_with_resumes()
-# SyncOrm.join_cte_subquery_window_func()
-SyncOrm.toggle_echo()
-# SyncOrm.select_workers_with_lazy_relationship()
-# SyncOrm.select_workers_with_lazy_joined_relationship()
-# SyncOrm.select_workers_with_lazy_selectinload_relationship()
-# SyncCore.join_cte_subquery_window_func()
-SyncOrm.select_workers_with_condition_relationship()
+# SyncOrm.update_worker()
+# SyncOrm.insert_resumes()
+# SyncOrm.select_workers()
+# # SyncOrm.select_avg_compensation_for_workload()
+# SyncOrm.insert_additional_workers_with_resumes()
+# # SyncOrm.join_cte_subquery_window_func()
+# SyncOrm.toggle_echo()
+# # SyncOrm.select_workers_with_lazy_relationship()
+# # SyncOrm.select_workers_with_lazy_joined_relationship()
+# # SyncOrm.select_workers_with_lazy_selectinload_relationship()
+# # SyncCore.join_cte_subquery_window_func()
+# print("\n\n\n\n\n\n")
+# # SyncOrm.select_workers_with_condition_relationship()
+# # print("\n\n\n\n\n\n")
+# # SyncOrm.select_workers_with_contains_eager()
+# # SyncOrm.select_workers_and_resumes_with_limit()
+# SyncOrm.add_vacancies_and_replies()
+# SyncOrm.select_resume_with_all_relationship()

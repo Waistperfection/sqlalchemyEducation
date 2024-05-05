@@ -1,3 +1,4 @@
+import itertools
 from typing import Annotated
 from sqlalchemy import String, create_engine
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
@@ -33,7 +34,13 @@ class Base(DeclarativeBase):
     max_cols = 3
     # can now use this type in subclasses like
     # name: Mapped[str_255]
-    
+    additional_print_fields: tuple[str] = ()
+
     def __repr__(self):
-        cols = [f"{col}={getattr(self, col)}" for col in self.__table__.columns.keys()]
-        return f"<{self.__class__.__name__}, {', '.join(cols[:3])}>"
+        cols = [
+            f"{col}={getattr(self, col)}"
+            for col in itertools.chain(
+                self.__table__.columns.keys()[:3], self.additional_print_fields
+            )
+        ]
+        return f"<{self.__class__.__name__}, {', '.join(cols)}>"
